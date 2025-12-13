@@ -1,0 +1,26 @@
+services:
+  apache-waf:
+    image: masbaaxiler/apache-waf:latest
+    container_name: apache-waf
+    volumes:
+      - ./apache/000-default.conf:/etc/apache2/sites-enabled/000-default.conf:ro
+      - ./logs/apache:/var/log/apache2
+      - ./logs/modsecurity:/var/log/modsecurity
+    networks:
+      - wafnet
+
+  nginx:
+    image: nginx:alpine
+    container_name: nginx-proxy
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - apache-waf
+    networks:
+      - wafnet
+
+networks:
+  wafnet:
+    driver: bridge
