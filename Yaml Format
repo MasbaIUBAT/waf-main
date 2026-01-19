@@ -1,0 +1,94 @@
+User (Public IP)
+   ↓
+DNS (Domain)
+   ↓
+ALB (created by Ingress)
+   ↓
+Ingress Rules
+   ↓
+Service (ClusterIP)
+   ↓
+Deployment (Pods)
+   ↓
+Apache + ModSecurity (ConfigMap + Secret)
+
+================================================================
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: waf-ingress
+  annotations:
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
+    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:ap-south-1:123456789012:certificate/abcd-1234
+    alb.ingress.kubernetes.io/ssl-redirect: '443'
+spec:
+  rules:
+  - host: waf.example.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: waf-service
+            port:
+              number: 80
+===============================================================================================================
+==============================ConfigMap=====================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: waf-config
+data:
+  apache.conf: |
+    RemoteIPHeader X-Forwarded-For
+    RemoteIPInternalProxy 10.0.0.0/8
+
+    LogFormat "%a %r %>s" combined
+    CustomLog /proc/self/fd/1 combined
+    ErrorLog /proc/self/fd/2
+
+    SecRuleEngine On
+============================================Deployment==========================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: waf-deployment
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: waf
+  template:
+    metadata:
+      labels:
+        app: waf
+    spec:
+      containers:
+      - name: apache-waf
+        image: apache-modsecurity:latest
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - name: config
+          mountPath: /etc/apache2/conf-enabled
+      volumes:
+      - name: config
+        configMap:
+          name: waf-config
+=======================================================service=======================
+apiVersion: v1
+kind: Service
+metadata:
+  name: waf-service
+spec:
+  type: ClusterIP
+  selector:
+    app: waf
+  ports:
+  - port: 80
+    targetPort: 80
+============================================
