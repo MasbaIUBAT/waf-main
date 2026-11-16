@@ -593,28 +593,7 @@ One WAF container on one EC2. Production would want multiple WAF instances behin
 
 ---
 
-## 11. Interview Cheat-Sheet
 
-**Q: What did you build?**
-A reverse-proxy WAF on AWS — Apache + ModSecurity + OWASP CRS in Docker. It inspects every HTTP request and blocks attacks (SQLi, XSS, etc.) before they reach the backend web server.
-
-**Q: Why a reverse proxy?**
-The WAF sits between the internet and the app. The app has a private IP with no public exposure — the only way in is through the WAF, so attackers can't bypass it.
-
-**Q: What was the hardest problem?**
-A version mismatch: Ubuntu's packaged ModSecurity was too old for modern OWASP CRS (`MULTIPART_PART_HEADERS` error). I learned that hand-assembling version-sensitive security tools is fragile, and switched to the maintained official OWASP image, which solves compatibility at the source while keeping my architecture.
-
-**Q: How does ModSecurity decide to block?**
-It uses an **anomaly scoring system**, not single rules. Each suspicious pattern adds points; when the total crosses the threshold (default 5), the request gets a 403. This catches attacks that are subtly malicious in several small ways.
-
-**Q: Why DetectionOnly before blocking?**
-To avoid false positives breaking real traffic. You observe for 1–2 weeks, tune exclusions, then switch to blocking.
-
-**Q: Biggest weakness of your current setup?**
-No monitoring/observability — logs aren't shipped to a dashboard or alerting system. Next step is an ELK or Grafana+Loki stack so attacks are visible and alertable, not just sitting in `docker logs`.
-
-**Q: How do you reuse it for multiple clients?**
-Same image, change one environment variable (`BACKEND`). Build once, deploy per client.
 
 ---
 
