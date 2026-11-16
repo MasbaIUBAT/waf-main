@@ -246,6 +246,6 @@ SecRule REQUEST_URI "@beginsWith /blog/post-comment" \
 
 ## Author
 
-**Masba Uddin Rumi **
+Masba Uddin Rumi 
 Senior System Administrator | Infrastructure & Security Engineer
 [GitHub](https://github.com/MasbaIUBAT) · [LinkedIn](https://linkedin.com/in/masba-uddin-rumi)
